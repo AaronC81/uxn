@@ -1,0 +1,8 @@
+[package]
+name = "uxn-main"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+uxn-core-emulator = { path = "../core-emulator" }
+uxn-utils = { path = "../uxn-utils" }

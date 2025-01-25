@@ -4,6 +4,8 @@
 mod common;
 mod stack;
 
+use std::process::exit;
+
 use common::{Item, ItemSize};
 use stack::{AccessMode, Stack};
 use uxn_utils::assemble_uxntal;
@@ -268,7 +270,33 @@ impl Core {
             0x16 => todo!(),
 
             // DEO
-            0x17 => todo!(),
+            0x17 => {
+                // TODO: handle non-byte writes.
+                //       this should just be treated as normal memory, and if stuff needs to be
+                //       triggered, it gets triggered for both bytes
+
+                // TODO: absolute minimal Varvara implementation for printing
+                // See: https://wiki.xxiivv.com/site/varvara.html#console
+                let (device, value) = op.byte().then_item().done();
+                let Item::Byte(byte) = value else { panic!() };
+
+                match device {
+                    // .System/state
+                    0x0f => {
+                        if byte != 0 {
+                            let exit_code = (byte as u8) & 0x7f;
+                            exit(exit_code as i32);
+                        }
+                    }
+
+                    // .Console/write
+                    0x18 => {
+                        print!("{}", byte as u8 as char);
+                    }
+
+                    _ => panic!("unsupported device port {device}")
+                }
+            },
 
             // ADD
             0x18 => {

@@ -94,6 +94,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "uxn-main"
+version = "0.1.0"
+dependencies = [
+ "uxn-core-emulator",
+ "uxn-utils",
+]
+
+[[package]]
 name = "uxn-utils"
 version = "0.1.0"
 dependencies = [

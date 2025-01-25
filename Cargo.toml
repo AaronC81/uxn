@@ -1,5 +1,5 @@
 [workspace]
 
 members = [
-    "core-emulator", "uxn-utils",
+    "core-emulator", "main", "uxn-utils",
 ]
