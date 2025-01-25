@@ -18,8 +18,8 @@ impl Stack {
         }
     }
 
-    pub fn first_bytes<const N: usize>(&self) -> [u8; N] {
-        self.data[..N].try_into().unwrap()
+    pub fn bytes(&self) -> &[u8] {
+        &self.data[..self.pointer as usize]
     }
 
     pub fn new_with_data(data: &[i8]) -> Self {
