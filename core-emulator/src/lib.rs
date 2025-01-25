@@ -347,8 +347,6 @@ impl Core {
                 let shift_left = (0xF0 & (shift as u8)) >> 4;
                 let shift_right = 0x0F & (shift as u8);
 
-                println!("Shifting:  left({shift_left}) right({shift_right})");
-
                 let item = a.shift(shift_left, shift_right);
                 self.target_stack(stack).push_item(item);
             },
