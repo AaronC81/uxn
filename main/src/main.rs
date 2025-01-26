@@ -1,6 +1,6 @@
 use std::{env::args, fs::File, io::Read};
 
-use uxn_core_emulator::Core;
+use uxn_core_emulator::{device::VarvaraDevice, Core};
 
 fn main() {
     // Current interface:
@@ -36,5 +36,6 @@ fn main() {
         "#);
     }
 
+    core.set_device(VarvaraDevice::new());
     core.execute_until_break();
 }

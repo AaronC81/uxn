@@ -1,5 +1,7 @@
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Sub};
 
+use num_traits::{ops::overflowing::OverflowingAdd, Num, One};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StackMode {
     Working,
@@ -13,10 +15,35 @@ pub enum ItemSize {
 }
 
 pub trait Memory {
-    type AddressSpace;
+    type AddressSpace: Copy + Num + OverflowingAdd;
 
-    fn read_memory(&self, addr: Self::AddressSpace, item_size: ItemSize) -> Item;
-    fn write_memory(&mut self, addr: Self::AddressSpace, item: Item);
+    fn read_byte(&self, addr: Self::AddressSpace) -> u8;
+    fn write_byte(&mut self, addr: Self::AddressSpace, byte: u8);
+
+    fn read_memory(&self, addr: Self::AddressSpace, item_size: ItemSize) -> Item {
+        match item_size {
+            ItemSize::Byte => Item::Byte(self.read_byte(addr) as i8),
+            ItemSize::Short => Item::Short(
+                i16::from_be_bytes([
+                    self.read_byte(addr),
+                    self.read_byte(addr.overflowing_add(&One::one()).0),
+                ])
+            ),
+        }
+    }
+
+    fn write_memory(&mut self, addr: Self::AddressSpace, item: Item) {
+        match item {
+            Item::Byte(byte) => {
+                self.write_byte(addr, byte as u8);
+            },
+            Item::Short(short) => {
+                let [hi, lo] = short.to_be_bytes();
+                self.write_byte(addr, hi);
+                self.write_byte(addr.overflowing_add(&One::one()).0, lo);
+            },
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

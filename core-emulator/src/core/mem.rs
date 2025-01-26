@@ -1,4 +1,4 @@
-use crate::{common::{Item, ItemSize}, Memory};
+use crate::Memory;
 
 use super::{Core, ROM_BASE};
 
@@ -23,28 +23,11 @@ impl Core {
 impl Memory for Core {
     type AddressSpace = u16;
 
-    fn read_memory(&self, addr: Self::AddressSpace, item_size: ItemSize) -> Item {
-        match item_size {
-            ItemSize::Byte => Item::Byte(self.memory[addr as usize] as i8),
-            ItemSize::Short => Item::Short(
-                i16::from_be_bytes([
-                    self.memory[addr as usize],
-                    self.memory[addr.overflowing_add(1).0 as usize],
-                ])
-            ),
-        }
+    fn read_byte(&self, addr: Self::AddressSpace) -> u8 {
+        self.memory[addr as usize]
     }
 
-    fn write_memory(&mut self, addr: Self::AddressSpace, item: Item) {
-        match item {
-            Item::Byte(byte) => {
-                self.memory[addr as usize] = byte as u8;
-            },
-            Item::Short(short) => {
-                let [hi, lo] = short.to_be_bytes();
-                self.memory[addr as usize] = hi;
-                self.memory[addr.overflowing_add(1).0 as usize] = lo;
-            },
-        }
+    fn write_byte(&mut self, addr: Self::AddressSpace, byte: u8) {
+        self.memory[addr as usize] = byte;
     }
 }

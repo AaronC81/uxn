@@ -226,35 +226,15 @@ impl Core {
             },
 
             // DEI
-            0x16 => todo!(),
+            0x16 => {
+                let (addr,) = op.byte().done();
+                self.device.read_memory(addr as u8, item_size);
+            }
 
             // DEO
             0x17 => {
-                // TODO: handle non-byte writes.
-                //       this should just be treated as normal memory, and if stuff needs to be
-                //       triggered, it gets triggered for both bytes
-
-                // TODO: absolute minimal Varvara implementation for printing
-                // See: https://wiki.xxiivv.com/site/varvara.html#console
-                let (device, value) = op.byte().then_item().done();
-                let Item::Byte(byte) = value else { panic!() };
-
-                match device {
-                    // .System/state
-                    0x0f => {
-                        if byte != 0 {
-                            let exit_code = (byte as u8) & 0x7f;
-                            exit(exit_code as i32);
-                        }
-                    }
-
-                    // .Console/write
-                    0x18 => {
-                        print!("{}", byte as u8 as char);
-                    }
-
-                    _ => panic!("unsupported device port {device}")
-                }
+                let (addr, value) = op.byte().then_item().done();
+                self.device.write_memory(addr as u8, value);
             },
 
             // ADD
