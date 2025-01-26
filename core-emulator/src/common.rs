@@ -12,6 +12,13 @@ pub enum ItemSize {
     Short,
 }
 
+pub trait Memory {
+    type AddressSpace;
+
+    fn read_memory(&self, addr: Self::AddressSpace, item_size: ItemSize) -> Item;
+    fn write_memory(&mut self, addr: Self::AddressSpace, item: Item);
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Item {
     Byte(i8),

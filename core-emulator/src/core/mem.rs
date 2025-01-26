@@ -1,4 +1,4 @@
-use crate::common::{Item, ItemSize};
+use crate::{common::{Item, ItemSize}, Memory};
 
 use super::{Core, ROM_BASE};
 
@@ -18,8 +18,12 @@ impl Core {
             *item = 0;
         }
     }
+}
 
-    pub fn read_memory(&self, addr: u16, item_size: ItemSize) -> Item {
+impl Memory for Core {
+    type AddressSpace = u16;
+
+    fn read_memory(&self, addr: Self::AddressSpace, item_size: ItemSize) -> Item {
         match item_size {
             ItemSize::Byte => Item::Byte(self.memory[addr as usize] as i8),
             ItemSize::Short => Item::Short(
@@ -31,7 +35,7 @@ impl Core {
         }
     }
 
-    pub fn write_memory(&mut self, addr: u16, item: Item) {
+    fn write_memory(&mut self, addr: Self::AddressSpace, item: Item) {
         match item {
             Item::Byte(byte) => {
                 self.memory[addr as usize] = byte as u8;

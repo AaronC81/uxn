@@ -1,6 +1,6 @@
 use std::process::exit;
 
-use crate::{common::{Item, ItemSize, StackMode}, stack::{AccessMode, Stack}};
+use crate::{common::{Item, ItemSize, StackMode}, stack::{AccessMode, Stack}, Memory};
 
 use super::Core;
 
