@@ -1,13 +1,13 @@
 use uxn_utils::assemble_uxntal;
 
-use crate::{device::EmptyDevice, stack::Stack, Memory};
+use crate::{device::{Device, EmptyDevice}, stack::Stack, Memory};
 
 pub struct Core {
     pub program_counter: u16,
     pub memory: [u8; 2usize.pow(16)],
     pub working_stack: Stack,
     pub return_stack: Stack,
-    pub device: Box<dyn Memory<AddressSpace = u8>>,
+    pub device: Box<dyn Device>,
 }
 
 const ROM_BASE: u16 = 0x0100;
@@ -34,7 +34,7 @@ impl Core {
         Self::new_with_rom(&rom)
     }
 
-    pub fn set_device(&mut self, device: impl Memory<AddressSpace = u8> + 'static) {
+    pub fn set_device(&mut self, device: impl Device + 'static) {
         self.device = Box::new(device);
     }
 }

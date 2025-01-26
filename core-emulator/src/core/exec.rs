@@ -1,6 +1,6 @@
 use std::process::exit;
 
-use crate::{common::{Item, ItemSize, StackMode}, stack::{AccessMode, Stack}, Memory};
+use crate::{common::{Item, ItemSize, StackMode}, device::DeviceEvent, stack::{AccessMode, Stack}, Memory};
 
 use super::Core;
 
@@ -10,6 +10,17 @@ pub enum ExecutionResult {
 }
 
 impl Core {
+    pub fn execute_until_exit(&mut self) {
+        loop {
+            self.execute_until_break();
+
+            match self.device.wait_for_event() {
+                DeviceEvent::Vector(vector) => self.program_counter = vector,
+                DeviceEvent::Exit => return,
+            }
+        }
+    }
+
     pub fn execute_until_break(&mut self) {
         loop {
             let ins = self.memory[self.program_counter as usize];

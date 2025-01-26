@@ -21,8 +21,15 @@ fn main() {
     } else {
         core = Core::new_with_uxntal(r#"
             |10 @Console [ &vector $2 &read $1 &pad $5 &write $1 &error $1 ]
+            |20 @Screen [ &vector $2 &width $2 &height $2 &auto $2 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 
-            |0100 ( -- )
+            |0100 
+
+            @on-reset ( -> )
+                ;on-screen .Screen/vector DEO2
+                #0320 .Screen/width  DEO2 ( 800px )
+                #0258 .Screen/height DEO2 ( 600px )
+
                 ;hello_world_str
                 &print_loop
                     LDAk                    ( Load pointed character )
@@ -32,10 +39,14 @@ fn main() {
                 POP                         ( Drop pointer once we're done )
             BRK
 
+            @on-screen ( -> )
+
+            BRK
+
             @hello_world_str "Hello 2c 20 "World 21 0a $1
         "#);
     }
 
     core.set_device(VarvaraDevice::new());
-    core.execute_until_break();
+    core.execute_until_exit();
 }
