@@ -25,7 +25,7 @@ impl Stack {
     pub fn new_with_data(data: &[i8]) -> Self {
         let mut stack = Self::new();
 
-        for (i, datum) in data.iter().enumerate() {
+        for datum in data {
             stack.push_byte(*datum);
         }
 

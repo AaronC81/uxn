@@ -1,5 +1,11 @@
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Sub};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StackMode {
+    Working,
+    Return,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ItemSize {
     Byte,
