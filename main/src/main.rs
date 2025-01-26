@@ -20,15 +20,20 @@ fn main() {
         core = Core::new_with_rom(&rom_data);
     } else {
         core = Core::new_with_uxntal(r#"
+            |00 @System &vector $2 &expansion $2 &wst $1 &rst $1 &metadata $2 &r $2 &g $2 &b $2 &debug $1 &state $1
             |10 @Console [ &vector $2 &read $1 &pad $5 &write $1 &error $1 ]
             |20 @Screen [ &vector $2 &width $2 &height $2 &auto $2 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
-
+        
             |0100 
 
             @on-reset ( -> )
                 ;on-screen .Screen/vector DEO2
                 #0320 .Screen/width  DEO2 ( 800px )
                 #0258 .Screen/height DEO2 ( 600px )
+
+                #a000 .System/r DEO2
+                #0000 .System/b DEO2
+                #0000 .System/g DEO2
 
                 ;hello_world_str
                 &print_loop
@@ -40,8 +45,13 @@ fn main() {
             BRK
 
             @on-screen ( -> )
-
+                ;counter LDA INC
+                DUP #20 NEQ ,&skip_forward JCN [ #0000 .System/r DEO2          ] &skip_forward
+                DUP #40 NEQ ,&skip_back    JCN [ #a000 .System/r DEO2  POP #00 ] &skip_back
+                ;counter STA
             BRK
+
+            @counter 00
 
             @hello_world_str "Hello 2c 20 "World 21 0a $1
         "#);
