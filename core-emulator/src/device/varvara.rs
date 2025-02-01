@@ -100,19 +100,46 @@ impl Memory for VarvaraDevice {
 
             // .Screen/vector
             0x20 => {
-                self.screen.vector = Some(replace_high_byte(self.screen.vector.unwrap_or(0), byte));
+                self.screen.vector = Some(with_high_byte(self.screen.vector.unwrap_or(0), byte));
             },
             0x21 => {
-                self.screen.vector = Some(replace_low_byte(self.screen.vector.unwrap_or(0), byte));
+                self.screen.vector = Some(with_low_byte(self.screen.vector.unwrap_or(0), byte));
             },
 
             // .Screen/width
-            0x22 => self.screen.map_size(|w, h| (replace_high_byte(w, byte), h)),
-            0x23 => self.screen.map_size(|w, h| (replace_low_byte(w, byte), h)),
+            0x22 => self.screen.map_size(|w, h| (with_high_byte(w, byte), h)),
+            0x23 => self.screen.map_size(|w, h| (with_low_byte(w, byte), h)),
 
             // .Screen/height
-            0x24 => self.screen.map_size(|w, h| (w, replace_high_byte(h, byte))),
-            0x25 => self.screen.map_size(|w, h| (w, replace_low_byte(h, byte))),
+            0x24 => self.screen.map_size(|w, h| (w, with_high_byte(h, byte))),
+            0x25 => self.screen.map_size(|w, h| (w, with_low_byte(h, byte))),
+
+            // .Screen/x
+            0x28 => set_high_byte(&mut self.screen.x, byte),
+            0x29 => set_low_byte( &mut self.screen.x, byte),
+
+            // .Screen/y
+            0x2a => set_high_byte(&mut self.screen.y, byte),
+            0x2b => set_low_byte( &mut self.screen.y, byte),
+
+            // .Screen/addr
+            0x2c => set_high_byte(&mut self.screen.sprite_addr, byte),
+            0x2d => set_low_byte( &mut self.screen.sprite_addr, byte),
+
+            // .Screen/pixel
+            0x2e => {
+                let (fill, layer, flip_y, flip_x, _, _, c1, c0) = explode_byte(byte);
+
+                // 2-bit number is a colour index
+                let colour = self.screen.colours[((c1 as usize) << 1) | (c0 as usize)];
+                let layer = if layer { Layer::Foreground } else { Layer::Background };
+
+                if fill {
+                    todo!()
+                } else {
+                    self.screen.draw_pixel(self.screen.x, self.screen.y, colour, layer);
+                }
+            },
 
             _ => panic!("unsupported device port {addr}")
         }
@@ -123,7 +150,13 @@ struct Screen {
     vector: Option<u16>,
     window: Window,
     colours: [Colour; 4],
-    framebuffer: Vec<u32>,
+
+    framebuffer_background: Vec<u32>,
+    framebuffer_foreground: Vec<u32>,
+
+    x: u16,
+    y: u16,
+    sprite_addr: u16,
 }
 
 impl Screen {
@@ -132,7 +165,13 @@ impl Screen {
             vector: None,
             window: Self::create_window(200, 200),
             colours: [Colour::new(); 4],
-            framebuffer: vec![],
+
+            framebuffer_background: vec![],
+            framebuffer_foreground: vec![],
+
+            x: 0,
+            y: 0,
+            sprite_addr: 0,
         };
         screen.reset_framebuffer();
         screen
@@ -169,8 +208,10 @@ impl Screen {
 
     pub fn update(&mut self) {
         let (width, height) = self.get_size();
+
+        let fb = self.overlay_framebuffers();
         self.window
-            .update_with_buffer(&self.framebuffer, width as usize, height as usize)
+            .update_with_buffer(&fb, width as usize, height as usize)
             .expect("could not update framebuffer");
 
         // Get ready for our next frame
@@ -182,16 +223,80 @@ impl Screen {
         let colour = self.colours[0].to_0rgb();
         let (width, height) = self.get_size();
 
-        self.framebuffer = vec![colour; (width as usize) * (height as usize)];
+        let size = (width as usize) * (height as usize);
+
+        self.framebuffer_background = vec![colour; size];
+        self.framebuffer_foreground = vec![colour; size];
+    }
+
+    fn overlay_framebuffers(&mut self) -> Vec<u32> {
+        let transparency = self.colours[0].to_0rgb();
+
+        self.framebuffer_background.iter().zip(&self.framebuffer_foreground)
+            .map(|(bg, fg)| {
+                // colour 0 is transparent on the foreground
+                if *fg == transparency {
+                    *bg
+                } else {
+                    *fg
+                }
+            })
+            .collect()
+    }
+
+    pub fn draw_pixel(&mut self, x: u16, y: u16, c: Colour, layer: Layer) {
+        // Ignore off-screen painting
+        let (width, height) = self.get_size();
+        if x >= width || y >= height {
+            return;
+        }
+
+        let index = y as usize * width as usize + x as usize;
+        self.get_framebuffer(layer)[index] = c.to_0rgb();
+    }
+
+    fn get_framebuffer(&mut self, layer: Layer) -> &mut Vec<u32> {
+        match layer {
+            Layer::Foreground => &mut self.framebuffer_foreground,
+            Layer::Background => &mut self.framebuffer_background,
+        }
     }
 }
 
-fn replace_high_byte(short: u16, new: u8) -> u16 {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Layer {
+    Foreground,
+    Background,
+}
+
+fn with_high_byte(short: u16, new: u8) -> u16 {
     (short & 0x00FF) | ((new as u16) << 8)
 }
 
-fn replace_low_byte(short: u16, new: u8) -> u16 {
+fn with_low_byte(short: u16, new: u8) -> u16 {
     (short & 0xFF00) | (new as u16)
+}
+
+fn set_high_byte(short: &mut u16, new: u8) {
+    *short = with_high_byte(*short, new);
+}
+
+fn set_low_byte(short: &mut u16, new: u8) {
+    *short = with_low_byte(*short, new);
+}
+
+// MSB first
+fn explode_byte(byte: u8) -> (bool, bool, bool, bool, bool, bool, bool, bool) {
+    (
+        byte & 0b1000_0000 != 0,
+        byte & 0b0100_0000 != 0,
+        byte & 0b0010_0000 != 0,
+        byte & 0b0001_0000 != 0,
+        byte & 0b0000_1000 != 0,
+        byte & 0b0000_0100 != 0,
+        byte & 0b0000_0010 != 0,
+        byte & 0b0000_0001 != 0,
+    )
 }
 
 /// A Varvara-compatible colour.

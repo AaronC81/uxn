@@ -31,9 +31,9 @@ fn main() {
                 #0320 .Screen/width  DEO2 ( 800px )
                 #0258 .Screen/height DEO2 ( 600px )
 
-                #a000 .System/r DEO2
-                #0000 .System/b DEO2
-                #0000 .System/g DEO2
+                #af00 .System/r DEO2
+                #0f00 .System/b DEO2
+                #0f00 .System/g DEO2
 
                 ;hello_world_str
                 &print_loop
@@ -46,9 +46,14 @@ fn main() {
 
             @on-screen ( -> )
                 ;counter LDA INC
-                DUP #20 NEQ ,&skip_forward JCN [ #0000 .System/r DEO2          ] &skip_forward
-                DUP #40 NEQ ,&skip_back    JCN [ #a000 .System/r DEO2  POP #00 ] &skip_back
+                DUP #20 NEQ ,&skip_forward JCN [ #0f00 .System/r DEO2          ] &skip_forward
+                DUP #40 NEQ ,&skip_back    JCN [ #af00 .System/r DEO2  POP #00 ] &skip_back
                 ;counter STA
+
+                ( Also paint a white pixel )
+                #0100 .Screen/x DEO2
+                #0100 .Screen/y DEO2
+                #01 .Screen/pixel DEO
             BRK
 
             @counter 00
