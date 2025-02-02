@@ -143,7 +143,7 @@ impl Core {
 
             // ROT
             0x05 => {
-                let (a, b, c) = op.item().then_item().then_item().done();
+                let (c, b, a) = op.item().then_item().then_item().done();
 
                 let stack = self.target_stack(stack);
                 stack.push_item(b);
