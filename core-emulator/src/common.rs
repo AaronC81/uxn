@@ -20,28 +20,30 @@ pub trait Memory {
     fn read_byte(&self, addr: Self::AddressSpace) -> u8;
     fn write_byte(&mut self, addr: Self::AddressSpace, byte: u8);
 
+    fn read_short(&self, addr: Self::AddressSpace) -> u16 {
+        u16::from_be_bytes([
+            self.read_byte(addr),
+            self.read_byte(addr.overflowing_add(&One::one()).0),
+        ])
+    }
+
+    fn write_short(&mut self, addr: Self::AddressSpace, short: u16) {
+        let [hi, lo] = short.to_be_bytes();
+        self.write_byte(addr, hi);
+        self.write_byte(addr.overflowing_add(&One::one()).0, lo);
+    }
+
     fn read_memory(&self, addr: Self::AddressSpace, item_size: ItemSize) -> Item {
         match item_size {
             ItemSize::Byte => Item::Byte(self.read_byte(addr) as i8),
-            ItemSize::Short => Item::Short(
-                i16::from_be_bytes([
-                    self.read_byte(addr),
-                    self.read_byte(addr.overflowing_add(&One::one()).0),
-                ])
-            ),
+            ItemSize::Short => Item::Short(self.read_short(addr) as i16),
         }
     }
 
     fn write_memory(&mut self, addr: Self::AddressSpace, item: Item) {
         match item {
-            Item::Byte(byte) => {
-                self.write_byte(addr, byte as u8);
-            },
-            Item::Short(short) => {
-                let [hi, lo] = short.to_be_bytes();
-                self.write_byte(addr, hi);
-                self.write_byte(addr.overflowing_add(&One::one()).0, lo);
-            },
+            Item::Byte(byte) => self.write_byte(addr, byte as u8),
+            Item::Short(short) => self.write_short(addr, short as u16),
         }
     }
 }

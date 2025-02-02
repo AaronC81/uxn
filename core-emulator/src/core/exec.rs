@@ -56,25 +56,53 @@ impl Core {
         match opcode {
             // BRK
             0x00 => {
+                use StackMode::*;
+                use ItemSize::*;
+                use AccessMode::*;
+
                 // This instruction is drastically different depending on the modes.
+                match (stack, item_size, mode) {
+                    // BRK
+                    (Working, Byte, Pop)  => return ExecutionResult::Break,
 
-                // If not `keep`, then it's BRK
-                if mode != AccessMode::Keep {
-                    return ExecutionResult::Break
-                }
+                    // JCI
+                    (Working, Short, Pop) => {
+                        let (cond,) = op.byte().done();
 
-                // Otherwise it is LIT
-                // Program counter has already been incremented, so we're already pointing at the
-                // first byte.
-                let item = match item_size {
-                    ItemSize::Byte => {
+                        let rel = self.read_short(self.program_counter);
+                        self.program_counter = self.program_counter.overflowing_add(2).0;
+
+                        if cond != 0 {
+                            self.program_counter = self.program_counter.overflowing_add(rel).0;
+                        }
+                    }
+
+                    // JMI
+                    (Return, Byte, Pop) => {
+                        let rel = self.read_short(self.program_counter);
+                        self.program_counter = self.program_counter.overflowing_add(2).0;
+                        self.program_counter = self.program_counter.overflowing_add(rel).0;
+                    }
+
+                    // JSI
+                    (Return, Short, Pop) => {
+                        self.return_stack.push_short(self.program_counter.overflowing_add(2).0 as i16);
+                        
+                        let rel = self.read_short(self.program_counter);
+                        self.program_counter = self.program_counter.overflowing_add(2).0;
+                        self.program_counter = self.program_counter.overflowing_add(rel).0;
+                    }
+
+                    // LIT
+                    (_, Byte, Keep) => {
                         let byte = self.memory[self.program_counter as usize];
                         self.program_counter = self.program_counter.overflowing_add(1).0;
 
-                        Item::Byte(byte as i8)
-                    },
+                        self.target_stack(stack).push_byte(byte as i8);
+                    }
 
-                    ItemSize::Short => {
+                    // LIT2
+                    (_, Short, Keep) => {
                         let bytes = [
                             self.memory[self.program_counter as usize],
                             self.memory[self.program_counter.overflowing_add(1).0 as usize],
@@ -82,11 +110,9 @@ impl Core {
                         self.program_counter = self.program_counter.overflowing_add(2).0;
 
                         let short = i16::from_be_bytes(bytes);
-                        Item::Short(short)
-                    },
-                };
-
-                self.target_stack(stack).push_item(item);
+                        self.target_stack(stack).push_short(short);
+                    }
+                }
             }
 
             // INC
