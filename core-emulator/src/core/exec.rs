@@ -86,7 +86,7 @@ impl Core {
 
                     // JSI
                     (Return, Short, Pop) => {
-                        self.return_stack.push_short(self.program_counter.overflowing_add(2).0 as i16);
+                        self.return_stack.push_short(self.program_counter.overflowing_add(2).0);
                         
                         let rel = self.read_short(self.program_counter);
                         self.program_counter = self.program_counter.overflowing_add(2).0;
@@ -98,7 +98,7 @@ impl Core {
                         let byte = self.memory[self.program_counter as usize];
                         self.program_counter = self.program_counter.overflowing_add(1).0;
 
-                        self.target_stack(stack).push_byte(byte as i8);
+                        self.target_stack(stack).push_byte(byte);
                     }
 
                     // LIT2
@@ -109,7 +109,7 @@ impl Core {
                         ];
                         self.program_counter = self.program_counter.overflowing_add(2).0;
 
-                        let short = i16::from_be_bytes(bytes);
+                        let short = u16::from_be_bytes(bytes);
                         self.target_stack(stack).push_short(short);
                     }
                 }
@@ -211,7 +211,7 @@ impl Core {
             // JSR
             0x0E => {
                 let (dest,) = op.item().done();
-                self.return_stack.push_short(self.program_counter as i16);
+                self.return_stack.push_short(self.program_counter);
                 self.jump_to_dynamic_address(dest);
             },
 
@@ -237,7 +237,7 @@ impl Core {
             // LDR
             0x12 => {
                 let (addr,) = op.byte().done();
-                let abs_addr = (self.program_counter as i32).overflowing_add(addr as i32).0 as i16; // TODO: what is right here? same with STR
+                let abs_addr = self.program_counter.overflowing_add(((addr as i8) as i16) as u16).0;
                 let item = self.read_memory(abs_addr as u16, item_size);
                 self.target_stack(stack).push_item(item);
             },
@@ -245,7 +245,7 @@ impl Core {
             // STR
             0x13 => {
                 let (addr, item) = op.byte().then_item().done();
-                let abs_addr = (self.program_counter as i32).overflowing_add(addr as i32).0 as i16;
+                let abs_addr = self.program_counter.overflowing_add(((addr as i8) as i16) as u16).0;
                 self.write_memory(abs_addr as u16, item);
             },
 

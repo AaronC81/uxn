@@ -35,8 +35,8 @@ pub trait Memory {
 
     fn read_memory(&self, addr: Self::AddressSpace, item_size: ItemSize) -> Item {
         match item_size {
-            ItemSize::Byte => Item::Byte(self.read_byte(addr) as i8),
-            ItemSize::Short => Item::Short(self.read_short(addr) as i16),
+            ItemSize::Byte => Item::Byte(self.read_byte(addr)),
+            ItemSize::Short => Item::Short(self.read_short(addr)),
         }
     }
 
@@ -50,8 +50,8 @@ pub trait Memory {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Item {
-    Byte(i8),
-    Short(i16),
+    Byte(u8),
+    Short(u16),
 }
 
 macro_rules! all_sizes {

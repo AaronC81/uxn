@@ -22,7 +22,7 @@ impl Stack {
         &self.data[..self.pointer as usize]
     }
 
-    pub fn new_with_data(data: &[i8]) -> Self {
+    pub fn new_with_data(data: &[u8]) -> Self {
         let mut stack = Self::new();
 
         for datum in data {
@@ -32,15 +32,15 @@ impl Stack {
         stack
     }
 
-    pub fn push_byte(&mut self, byte: i8) {
-        self.data[self.pointer as usize] = byte as u8;
+    pub fn push_byte(&mut self, byte: u8) {
+        self.data[self.pointer as usize] = byte;
         self.pointer = self.pointer.overflowing_add(1).0;
     }
 
-    pub fn push_short(&mut self, short: i16) {
+    pub fn push_short(&mut self, short: u16) {
         let [hi, lo] = short.to_be_bytes();
-        self.push_byte(hi as i8);
-        self.push_byte(lo as i8);
+        self.push_byte(hi);
+        self.push_byte(lo);
     }
 
     pub fn push_item(&mut self, item: Item) {
@@ -76,19 +76,19 @@ impl<'s> StackOperandAccessor<'s, ()> {
 }
 
 impl<'s, T> StackOperandAccessor<'s, T> {
-    fn this_byte(&self) -> (i8, u8) {
+    fn this_byte(&self) -> (u8, u8) {
         let (pointer, _) = self.pointer.overflowing_sub(1);
-        let byte = self.stack.data[pointer as usize] as i8;
+        let byte = self.stack.data[pointer as usize];
         (byte, pointer)
     }
 
-    fn this_short(&self) -> (i16, u8) {
+    fn this_short(&self) -> (u16, u8) {
         let (pointer, _) = self.pointer.overflowing_sub(2);
         let bytes = [
             self.stack.data[pointer as usize],
             self.stack.data[(pointer.overflowing_add(1).0) as usize],
         ];
-        let short = i16::from_be_bytes(bytes);
+        let short = u16::from_be_bytes(bytes);
         (short, pointer)
     }
 
@@ -115,12 +115,12 @@ impl<'s, T> StackOperandAccessor<'s, T> {
 }
 
 impl<'s> StackOperandAccessor<'s, ()> {
-    pub fn byte(self) -> StackOperandAccessor<'s, (i8,)> {
+    pub fn byte(self) -> StackOperandAccessor<'s, (u8,)> {
         let (byte, pointer) = self.this_byte();
         StackOperandAccessor { pointer, data: (byte,), ..self }
     }
 
-    pub fn short(self) -> StackOperandAccessor<'s, (i16,)> {
+    pub fn short(self) -> StackOperandAccessor<'s, (u16,)> {
         let (short, pointer) = self.this_short();
         StackOperandAccessor { pointer, data: (short,), ..self }
     }
@@ -132,13 +132,13 @@ impl<'s> StackOperandAccessor<'s, ()> {
 }
 
 impl<'s, T1> StackOperandAccessor<'s, (T1,)> {
-    pub fn then_byte(self) -> StackOperandAccessor<'s, (T1, i8)> {
+    pub fn then_byte(self) -> StackOperandAccessor<'s, (T1, u8)> {
         let (byte, pointer) = self.this_byte();
         let (d1,) = self.data;
         StackOperandAccessor { pointer, data: (d1, byte), ..self }
     }
 
-    pub fn then_short(self) -> StackOperandAccessor<'s, (T1, i16)> {
+    pub fn then_short(self) -> StackOperandAccessor<'s, (T1, u16)> {
         let (short, pointer) = self.this_short();
         let (d1,) = self.data;
         StackOperandAccessor { pointer, data: (d1, short), ..self }
@@ -152,13 +152,13 @@ impl<'s, T1> StackOperandAccessor<'s, (T1,)> {
 }
 
 impl<'s, T1, T2> StackOperandAccessor<'s, (T1, T2)> {
-    pub fn then_byte(self) -> StackOperandAccessor<'s, (T1, T2, i8)> {
+    pub fn then_byte(self) -> StackOperandAccessor<'s, (T1, T2, u8)> {
         let (byte, pointer) = self.this_byte();
         let (d1, d2) = self.data;
         StackOperandAccessor { pointer, data: (d1, d2, byte), ..self }
     }
 
-    pub fn then_short(self) -> StackOperandAccessor<'s, (T1, T2, i16)> {
+    pub fn then_short(self) -> StackOperandAccessor<'s, (T1, T2, u16)> {
         let (short, pointer) = self.this_short();
         let (d1, d2) = self.data;
         StackOperandAccessor { pointer, data: (d1, d2, short), ..self }
