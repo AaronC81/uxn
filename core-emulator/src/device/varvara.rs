@@ -148,16 +148,16 @@ impl Memory for VarvaraDevice {
                 let (fill, layer, flip_y, flip_x, _, _, c1, c0) = explode_byte(byte);
 
                 // 2-bit number is a colour index
-                let colour = self.screen.colours[((c1 as usize) << 1) | (c0 as usize)];
+                let colour_index = ((c1 as u8) << 1) | (c0 as u8);
                 let layer = if layer { Layer::Foreground } else { Layer::Background };
 
                 if fill {
                     let x_dir = if flip_x { FillDirection::Negative } else { FillDirection::Positive };
                     let y_dir = if flip_y { FillDirection::Negative } else { FillDirection::Positive };
 
-                    self.screen.fill_pixels(self.screen.x, self.screen.y, x_dir, y_dir, colour, layer);
+                    self.screen.fill_pixels(self.screen.x, self.screen.y, x_dir, y_dir, colour_index, layer);
                 } else {
-                    self.screen.draw_pixel(self.screen.x, self.screen.y, colour, layer);
+                    self.screen.draw_pixel(self.screen.x, self.screen.y, colour_index, layer);
                 }
             },
 
@@ -177,8 +177,9 @@ struct Screen {
     window: Window,
     colours: [Colour; 4],
 
-    framebuffer_background: Vec<u32>,
-    framebuffer_foreground: Vec<u32>,
+    // Stores colour indices
+    framebuffer_background: Vec<u8>,
+    framebuffer_foreground: Vec<u8>,
 
     x: u16,
     y: u16,
@@ -245,32 +246,28 @@ impl Screen {
     }
 
     fn reset_framebuffer(&mut self) {
-        // Each frame starts off filled with colour 0
-        let colour = self.colours[0].to_0rgb();
         let (width, height) = self.get_size();
-
         let size = (width as usize) * (height as usize);
-
-        self.framebuffer_background = vec![colour; size];
-        self.framebuffer_foreground = vec![colour; size];
+        
+        // Each frame starts off filled with colour 0
+        self.framebuffer_background = vec![0; size];
+        self.framebuffer_foreground = vec![0; size];
     }
 
     fn overlay_framebuffers(&mut self) -> Vec<u32> {
-        let transparency = self.colours[0].to_0rgb();
-
         self.framebuffer_background.iter().zip(&self.framebuffer_foreground)
             .map(|(bg, fg)| {
                 // colour 0 is transparent on the foreground
-                if *fg == transparency {
-                    *bg
+                if *fg == 0 {
+                    self.colours[*bg as usize].to_0rgb()
                 } else {
-                    *fg
+                    self.colours[*fg as usize].to_0rgb()
                 }
             })
             .collect()
     }
 
-    pub fn draw_pixel(&mut self, x: u16, y: u16, c: Colour, layer: Layer) {
+    pub fn draw_pixel(&mut self, x: u16, y: u16, colour_index: u8, layer: Layer) {
         // Ignore off-screen painting
         let (width, height) = self.get_size();
         if x >= width || y >= height {
@@ -278,10 +275,10 @@ impl Screen {
         }
 
         let index = y as usize * width as usize + x as usize;
-        self.get_framebuffer(layer)[index] = c.to_0rgb();
+        self.get_framebuffer(layer)[index] = colour_index;
     }
 
-    pub fn fill_pixels(&mut self, x_start: u16, y_start: u16, x_dir: FillDirection, y_dir: FillDirection, c: Colour, layer: Layer) {
+    pub fn fill_pixels(&mut self, x_start: u16, y_start: u16, x_dir: FillDirection, y_dir: FillDirection, colour_index: u8, layer: Layer) {
         // Ignore fill if it starts off-screen
         let (width, height) = self.get_size();
         if x_start >= width || y_start >= height {
@@ -300,12 +297,12 @@ impl Screen {
         // TODO: can do memset or something
         for x in x_range {
             for y in y_range.clone() {
-                self.draw_pixel(x, y, c, layer);
+                self.draw_pixel(x, y, colour_index, layer);
             }
         }
     }
 
-    fn get_framebuffer(&mut self, layer: Layer) -> &mut Vec<u32> {
+    fn get_framebuffer(&mut self, layer: Layer) -> &mut Vec<u8> {
         match layer {
             Layer::Foreground => &mut self.framebuffer_foreground,
             Layer::Background => &mut self.framebuffer_background,
