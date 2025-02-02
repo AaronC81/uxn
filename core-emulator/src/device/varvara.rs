@@ -187,7 +187,7 @@ impl Screen {
     pub fn new() -> Self {
         let mut screen = Screen {
             vector: None,
-            window: Self::create_window(200, 200),
+            window: Self::create_window(800, 600),
             colours: [Colour::new(); 4],
 
             framebuffer_background: vec![],
