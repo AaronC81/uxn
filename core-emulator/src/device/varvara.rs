@@ -152,11 +152,18 @@ impl Memory for VarvaraDevice {
                 let layer = if layer { Layer::Foreground } else { Layer::Background };
 
                 if fill {
-                    todo!()
+                    // TODO
+                    println!("Warning: Tried to fill, not supported yet")
                 } else {
                     self.screen.draw_pixel(self.screen.x, self.screen.y, colour, layer);
                 }
             },
+
+            // .Screen/sprite
+            0x2f => {
+                // TODO
+                println!("Warning: Tried to draw a sprite, not supported yet")
+            }
 
             _ => panic!("unsupported device port {addr}")
         }
