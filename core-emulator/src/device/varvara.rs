@@ -220,7 +220,10 @@ impl Screen {
         self.set_size(w, h);
     }
 
-    fn create_window(width: u16, height: u16) -> Window {
+    fn create_window(mut width: u16, mut height: u16) -> Window {
+        if width == 0 { width = 1 }
+        if height == 0 { height = 1 }
+
         let mut window = Window::new(
             "uxn",
             width as usize, height as usize, // Correct-feeling default size
