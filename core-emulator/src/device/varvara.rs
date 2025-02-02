@@ -39,13 +39,30 @@ impl Memory for VarvaraDevice {
     type AddressSpace = u8;
 
     fn read_byte(&self, addr: Self::AddressSpace) -> u8 {
-        // TODO: no reading yet
-        0
+        // TODO: reading mostly unimplemented
+        match addr {
+            // .Screen/width
+            0x22 => ((self.screen.get_size().0 & 0xFF00) >> 8) as u8,
+            0x23 => ((self.screen.get_size().0 & 0x00FF)     ) as u8,
+
+            // .Screen/height
+            0x24 => ((self.screen.get_size().1 & 0xFF00) >> 8) as u8,
+            0x25 => ((self.screen.get_size().1 & 0x00FF)     ) as u8,
+
+            // .Screen/x
+            0x28 => ((self.screen.x & 0xFF00) >> 8) as u8,
+            0x29 => ((self.screen.x & 0x00FF)     ) as u8,
+
+            // .Screen/y
+            0x2a => ((self.screen.y & 0xFF00) >> 8) as u8,
+            0x2b => ((self.screen.y & 0x00FF)     ) as u8,            
+
+            _ => 0,
+        }
     }
 
     fn write_byte(&mut self, addr: Self::AddressSpace, byte: u8) {
-        // TODO: absolute minimal Varvara implementation for printing
-        // See: https://wiki.xxiivv.com/site/varvara.html#console
+        // See: https://wiki.xxiivv.com/site/varvara.html
         match addr {
             // TODO: reduce duplication in colour channel code
 
