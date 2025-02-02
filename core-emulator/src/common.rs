@@ -75,7 +75,7 @@ macro_rules! all_sizes_binop {
 
 impl Item {
     pub fn increment(self) -> Item {
-        all_sizes!(self in n => n + 1)
+        all_sizes!(self in n => n.overflowing_add(1).0)
     }
 
     pub fn shift(self, left: u8, right: u8) -> Item {
