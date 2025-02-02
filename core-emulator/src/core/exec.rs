@@ -162,7 +162,7 @@ impl Core {
 
             // OVR
             0x07 => {
-                let (a, b) = op.item().then_item().done();
+                let (b, a) = op.item().then_item().done();
 
                 let stack = self.target_stack(stack);
                 stack.push_item(a);

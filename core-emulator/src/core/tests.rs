@@ -37,6 +37,12 @@ fn test_sft() {
     assert_eq!(execute("#1248 #34 SFTk2 BRK"), [0x12, 0x48, 0x34, 0x09, 0x20]);
 }
 
+#[test]
+fn test_ovr() {
+    assert_eq!(execute("#34 #10 OVR BRK"), [0x34, 0x10, 0x34]);
+    assert_eq!(execute("#1234 #5678 OVR2 BRK"), [0x12, 0x34, 0x56, 0x78, 0x12, 0x34]);
+}
+
 fn execute(code: &str) -> Vec<u8> {
     let mut core = Core::new_with_uxntal(code);
     core.execute_until_break();
