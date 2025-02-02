@@ -152,8 +152,10 @@ impl Memory for VarvaraDevice {
                 let layer = if layer { Layer::Foreground } else { Layer::Background };
 
                 if fill {
-                    // TODO
-                    println!("Warning: Tried to fill, not supported yet")
+                    let x_dir = if flip_x { FillDirection::Negative } else { FillDirection::Positive };
+                    let y_dir = if flip_y { FillDirection::Negative } else { FillDirection::Positive };
+
+                    self.screen.fill_pixels(self.screen.x, self.screen.y, x_dir, y_dir, colour, layer);
                 } else {
                     self.screen.draw_pixel(self.screen.x, self.screen.y, colour, layer);
                 }
@@ -279,6 +281,30 @@ impl Screen {
         self.get_framebuffer(layer)[index] = c.to_0rgb();
     }
 
+    pub fn fill_pixels(&mut self, x_start: u16, y_start: u16, x_dir: FillDirection, y_dir: FillDirection, c: Colour, layer: Layer) {
+        // Ignore fill if it starts off-screen
+        let (width, height) = self.get_size();
+        if x_start >= width || y_start >= height {
+            return;
+        }
+
+        let x_range = match x_dir {
+            FillDirection::Positive => x_start..width,
+            FillDirection::Negative => 0..x_start,
+        };
+        let y_range = match y_dir {
+            FillDirection::Positive => y_start..height,
+            FillDirection::Negative => 0..y_start,
+        };
+
+        // TODO: can do memset or something
+        for x in x_range {
+            for y in y_range.clone() {
+                self.draw_pixel(x, y, c, layer);
+            }
+        }
+    }
+
     fn get_framebuffer(&mut self, layer: Layer) -> &mut Vec<u32> {
         match layer {
             Layer::Foreground => &mut self.framebuffer_foreground,
@@ -291,6 +317,12 @@ impl Screen {
 pub enum Layer {
     Foreground,
     Background,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FillDirection {
+    Positive,
+    Negative,
 }
 
 fn with_high_byte(short: u16, new: u8) -> u16 {
