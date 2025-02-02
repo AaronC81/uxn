@@ -239,7 +239,8 @@ impl Core {
             // DEI
             0x16 => {
                 let (addr,) = op.byte().done();
-                self.device.read_memory(addr as u8, item_size);
+                let item = self.device.read_memory(addr as u8, item_size);
+                self.target_stack(stack).push_item(item);
             }
 
             // DEO
