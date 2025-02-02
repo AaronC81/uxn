@@ -213,9 +213,6 @@ impl Screen {
         self.window
             .update_with_buffer(&fb, width as usize, height as usize)
             .expect("could not update framebuffer");
-
-        // Get ready for our next frame
-        self.reset_framebuffer(); 
     }
 
     fn reset_framebuffer(&mut self) {
